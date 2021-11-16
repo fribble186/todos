@@ -1,8 +1,30 @@
+@font-face {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+  src: url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.eot');
+  src: url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.eot?#iefix')
+      format('embedded-opentype'),
+    url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.woff2')
+      format('woff2'),
+    url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.woff')
+      format('woff'),
+    url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.ttf')
+      format('truetype'),
+    url('https://todo-web.oss-cn-shanghai.aliyuncs.com/REEJI-TaikoMagicGB-Flash.svg#REEJI-TaikoMagicGB-Flash')
+      format('svg');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+.page {
+  width: 60vw;
+  margin-left: 20vw;
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+}
 .pcHeadContainer {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  padding: 20px;
+  padding: 20px 20px 20px 0;
   align-items: center;
 }
 .durationSelector {
@@ -10,8 +32,9 @@
   flex-direction: row;
 }
 .durationSelectorItem {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
   svg {
-    position:absolute;
+    position: absolute;
     width: 38px;
     height: 38px;
   }
@@ -25,43 +48,29 @@
   height: 40px;
   cursor: pointer;
 }
-.userIcon {
-  font-size: 20px;
-  font-weight: bold;
-  height: 120px;
+.inputContainer {
   svg {
-    position:absolute;
-    right: -100px;
+    width: 520px;
+    height: 40px;
+    position: absolute;
   }
-  div{
-    position:absolute;
-    color: white;
-    width: 160px;
-    top:80px;
-    right: 0px;
+  input {
+    margin-top: 5px;
+    width: 520px;
+    font-family: 'REEJI-TaikoMagicGB-Flash';
   }
 }
-.todoAddContainer{
+.todoAddContainer {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0 50px;
   height: 70px;
-  .svgContainer {
-    svg {
-      width: 520px;
-      height: 40px;
-      position: absolute;
-    }
-    input {
-      margin-top: 2px;
-      width: 520px;
-    }
-  }
-  .todoAddBtn{
+  .todoAddBtn {
     font-size: 50px;
   }
   .diary {
+    font-family: 'REEJI-TaikoMagicGB-Flash';
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -78,34 +87,55 @@
     margin-right: 30px;
   }
 }
-.todoItemContainer{
+.todoItemContainer {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 12px 30px;
-  margin: 10px 30px;
-  .svgContainer{
-    svg {
-      width: 520px;
-      height: 40px;
-      position: absolute;
-    }
-    input {
-      margin-top: 2px;
-      width: 520px;
-    }
-  }
-  .icon {
-    font-size: 26px;
-    margin: 0 10px;
-    cursor: pointer;
-  }
-  .unselected{
+  padding: 5px 30px;
+  margin: 5px 30px;
+  .unselected {
     width: 50px;
     height: 50px;
-    margin-right: 20px;
   }
   .selected {
-    font-size: 30px;
+    width: 50px;
+    height: 50px;
+    font-size: 40px;
   }
+}
+.hugeBtn {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+  width: 102px;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  svg {
+    width: 102px;
+    height: 38px;
+    position: absolute;
+  }
+  span {
+    position: absolute;
+  }
+  font-size: 26px;
+  margin: 0 10px;
+  cursor: pointer;
+}
+.smallBtn {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+  width: 62px;
+  height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  svg {
+    width: 62px;
+    height: 28px;
+    position: absolute;
+  }
+  font-size: 20px;
+  margin: 0 10px;
+  cursor: pointer;
 }
