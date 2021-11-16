@@ -20,6 +20,10 @@
   margin-left: 20vw;
   font-family: 'REEJI-TaikoMagicGB-Flash';
 }
+.mobilePage {
+  margin-left: 2vw;
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+}
 .pcHeadContainer {
   display: flex;
   flex-direction: row;
@@ -60,6 +64,17 @@
     font-family: 'REEJI-TaikoMagicGB-Flash';
   }
 }
+.mobileInputContainer {
+  svg {
+    width: 220px;
+    height: 30px;
+    position: absolute;
+  }
+  input {
+    width: 220px;
+    font-family: 'REEJI-TaikoMagicGB-Flash';
+  }
+}
 .todoAddContainer {
   display: flex;
   flex-direction: row;
@@ -87,12 +102,58 @@
     margin-right: 30px;
   }
 }
+.mobileTodoAddContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 20px;
+  height: 70px;
+  .todoAddBtn {
+    font-size: 30px;
+  }
+  input {
+    margin-right: 10px;
+  }
+  .diary {
+    font-family: 'REEJI-TaikoMagicGB-Flash';
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    svg {
+      font-size: 20px;
+    }
+    span {
+      font-weight: bold;
+    }
+    width: 80px;
+    height: 60px;
+    margin-right: 10px;
+  }
+}
 .todoItemContainer {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 5px 30px;
   margin: 5px 30px;
+  .unselected {
+    width: 50px;
+    height: 50px;
+  }
+  .selected {
+    width: 50px;
+    height: 50px;
+    font-size: 40px;
+  }
+}
+.mobileTodoItemContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 6px;
+  margin: 5px 6px;
   .unselected {
     width: 50px;
     height: 50px;
@@ -137,5 +198,38 @@
   }
   font-size: 20px;
   margin: 0 10px;
+  cursor: pointer;
+}
+.smallBtn {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+  width: 62px;
+  height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  svg {
+    width: 62px;
+    height: 28px;
+    position: absolute;
+  }
+  font-size: 20px;
+  margin: 0 10px;
+  cursor: pointer;
+}
+.mobileSmallBtn {
+  font-family: 'REEJI-TaikoMagicGB-Flash';
+  width: 42px;
+  height: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  svg {
+    width: 42px;
+    height: 18px;
+    position: absolute;
+  }
+  font-size: 12px;
+  margin: 0 6px;
   cursor: pointer;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './index.less';
 import { Input, Form } from 'antd';
 import { createFromIconfontCN } from '@ant-design/icons';
@@ -6,6 +6,8 @@ import rough from 'roughjs';
 import moment from 'moment';
 import { useHistory } from 'umi';
 import type { Options } from 'roughjs/bin/core';
+
+const WEBWIDTH = 800;
 
 const IconFont = createFromIconfontCN({
   scriptUrl: '//at.alicdn.com/t/font_2938743_vkdbbq13v9.js',
@@ -41,6 +43,22 @@ declare const DurationType: 'day' | 'week' | 'month' | 'year';
 
 export default function IndexPage() {
   const history = useHistory();
+
+  const [isWeb, setIsWeb] = useState(
+    document.documentElement.clientWidth > WEBWIDTH,
+  );
+
+  const onResize = useCallback(() => {
+    setIsWeb(document.documentElement.clientWidth > WEBWIDTH);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  });
+
   /**
    * 通过 proxy 监听 localstorage 的 set 事件
    * 如果有 set 事件则 手动触发刷新
@@ -156,7 +174,9 @@ export default function IndexPage() {
   const handleAddTodo = () => {
     const todoData = TODO?.data || [];
     todoData.push({
-      id: String(Math.max(...todoData.map((todo) => Number(todo.id))) + 1),
+      id: todoData.length
+        ? String(Math.max(...todoData.map((todo) => Number(todo.id))) + 1)
+        : '0',
       content: inputVal,
       endTime: deadline,
     });
@@ -172,7 +192,16 @@ export default function IndexPage() {
    */
   const generateRoughSvg = (
     ref: SVGSVGElement | null,
-    type: 'rect' | 'hugeBtn' | 'smallBtn' | 'radio' | 'input' | 'inputLine',
+    type:
+      | 'rect'
+      | 'hugeBtn'
+      | 'smallBtn'
+      | 'mobileSmallBtn'
+      | 'radio'
+      | 'input'
+      | 'inputLine'
+      | 'mobileInput'
+      | 'mobileInputline',
     options?: Options,
   ) => {
     if (ref) {
@@ -189,14 +218,23 @@ export default function IndexPage() {
         case 'smallBtn':
           node = rs.rectangle(2, 2, 60, 26, options);
           break;
+        case 'mobileSmallBtn':
+          node = rs.rectangle(2, 2, 40, 16, options);
+          break;
         case 'radio':
           node = rs.circle(20, 20, 20, options);
           break;
         case 'input':
           node = rs.rectangle(2, 2, 500, 35);
           break;
+        case 'mobileInput':
+          node = rs.rectangle(2, 2, 200, 25);
+          break;
         case 'inputLine':
           node = rs.line(0, 30, 500, 30);
+          break;
+        case 'mobileInputline':
+          node = rs.rectangle(2, 2, 200, 25);
           break;
       }
       if (node) {
@@ -207,7 +245,7 @@ export default function IndexPage() {
     }
   };
 
-  return (
+  return isWeb ? (
     <div className={styles.page}>
       <div className={styles.pcHeadContainer}>
         <div className={styles.durationSelector}>
@@ -320,6 +358,124 @@ export default function IndexPage() {
                 onClick={() => handleDeleteTodo(todo)}
               >
                 <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
+                <span>删除</span>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className={styles.mobilePage}>
+      mobile
+      <div className={styles.pcHeadContainer}>
+        <div className={styles.durationSelector}>
+          {(
+            [
+              { key: 'day', value: '天' },
+              { key: 'week', value: '周' },
+              { key: 'month', value: '月' },
+              { key: 'year', value: '年' },
+            ] as { key: typeof DurationType; value: string }[]
+          ).map(({ key, value }) => (
+            <div
+              key={`duration_${key}`}
+              className={styles.durationSelectorItem}
+              onClick={() => currentDuration !== key && setCurrentDuration(key)}
+            >
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(
+                    ref,
+                    'rect',
+                    currentDuration === key
+                      ? { fill: 'black', fillStyle: 'solid' }
+                      : {},
+                  )
+                }
+              />
+              <span
+                style={
+                  currentDuration === key
+                    ? { position: 'absolute', color: 'white' }
+                    : {}
+                }
+              >
+                {value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <span>DEADLINE: {deadline}</span>
+      </div>
+      <div className={styles.mobileTodoAddContainer}>
+        <div className={styles.diary} onClick={() => history.push('/diary')}>
+          <IconFont type="icon-shubenbijiben" />
+          <span>查看日记</span>
+        </div>
+        <div className={styles.mobileInputContainer}>
+          <svg ref={(ref) => generateRoughSvg(ref, 'mobileInput')} />
+          <Input
+            value={inputVal}
+            bordered={false}
+            onPressEnter={handleAddTodo}
+            onChange={(e) => setInputVal(e.target.value)}
+          />
+        </div>
+
+        <div className={styles.hugeBtn} onClick={handleAddTodo}>
+          <svg
+            ref={(ref) =>
+              generateRoughSvg(ref, 'hugeBtn', {
+                fill: 'black',
+                fillStyle: 'solid',
+              })
+            }
+          />
+          <span>记一笔</span>
+        </div>
+      </div>
+      {filterTodoDataByDuration.map((todo, todoIndex) => (
+        <div
+          key={`todo${todoIndex}`}
+          className={styles.mobileTodoItemContainer}
+        >
+          {todo.doneTime ? (
+            <IconFont
+              type="icon-xuanzhong"
+              className={styles.selected}
+              onClick={() => handleUnDoneTodo(todo)}
+            />
+          ) : (
+            <svg
+              ref={(ref) => generateRoughSvg(ref, 'radio')}
+              onClick={() => handleDoneTodo(todo)}
+              className={styles.unselected}
+            />
+          )}
+          <div className={styles.mobileInputContainer}>
+            {todo.doneTime ? null : (
+              <svg ref={(ref) => generateRoughSvg(ref, 'mobileInputline')} />
+            )}
+            <Input
+              bordered={false}
+              value={todo.content}
+              style={todo.doneTime ? { textDecoration: 'line-through' } : {}}
+            />
+          </div>
+          {todo.doneTime ? null : (
+            <>
+              <div className={styles.mobileSmallBtn}>
+                <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
+                <span>编辑</span>
+              </div>
+              <div
+                className={styles.mobileSmallBtn}
+                onClick={() => handleDeleteTodo(todo)}
+              >
+                <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
                 <span>删除</span>
               </div>
             </>
