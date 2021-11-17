@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './index.less';
-import { Input, Modal } from 'antd';
+import { Input, Modal, message } from 'antd';
 import { createFromIconfontCN } from '@ant-design/icons';
 import rough from 'roughjs';
 import moment from 'moment';
-import { useHistory } from 'umi';
+import { useHistory, useRequest } from 'umi';
 import type { Options } from 'roughjs/bin/core';
 import request from 'umi-request';
 
@@ -46,25 +46,33 @@ declare const DurationType: 'day' | 'week' | 'month' | 'year';
 export default function IndexPage() {
   const history = useHistory();
 
-  const [isWeb, setIsWeb] = useState(
-    document.documentElement.clientWidth > WEBWIDTH,
-  );
-  const onResize = useCallback(() => {
-    setIsWeb(document.documentElement.clientWidth > WEBWIDTH);
-  }, []);
-  useEffect(() => {
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-    };
-  });
-
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginVerifyCode, setLoginVerifyCode] = useState<string>('');
 
   const getVerifyCode = () => {
     request.post('/api/verify/sendVerify', { data: { email: loginEmail } });
+  };
+
+  const { run } = useRequest(
+    (params) => request.post('/api/todo/sync', params),
+    {
+      debounceInterval: 2000,
+      manual: true,
+    },
+  );
+  const login = async () => {
+    const response = await request.post('/api/user/login', {
+      data: { email: loginEmail, code: loginVerifyCode },
+    });
+    if (response.success) {
+      setShowLoginModal(false);
+      window.localStorage.setItem('TODO-EMAIL', loginEmail);
+      setLoginEmail('');
+      setLoginVerifyCode('');
+    } else {
+      message.error(response.message || '出错了');
+    }
   };
 
   /**
@@ -85,12 +93,48 @@ export default function IndexPage() {
   }
   const TODO = new Proxy(OriginTODO, {
     set: function (obj, prop, value) {
-      if (prop === 'data') obj[prop] = value;
-      STORAGE.setItem('TODO', JSON.stringify(obj));
-      refresh();
+      if (prop === 'data') {
+        obj[prop] = value;
+        STORAGE.setItem('TODO', JSON.stringify(obj));
+        const email = window.localStorage.getItem('TODO-EMAIL');
+        if (email) {
+          run({ data: { data: obj, email } }).then((response) =>
+            console.log(response),
+          );
+        }
+        refresh();
+      }
       return true;
     },
   });
+
+  const [isWeb, setIsWeb] = useState(
+    document.documentElement.clientWidth > WEBWIDTH,
+  );
+  const onResize = useCallback(() => {
+    setIsWeb(document.documentElement.clientWidth > WEBWIDTH);
+  }, []);
+  useEffect(() => {
+    window.addEventListener('resize', onResize);
+    const email = window.localStorage.getItem('TODO-EMAIL');
+    if (email) {
+      request
+        .post('/api/todo/getTodo', { data: { email } })
+        .then((response) => {
+          if (response.data) {
+            try {
+              const todoData = JSON.parse(response.data).data;
+              TODO.data = todoData;
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        });
+    }
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   const [currentDuration, setCurrentDuration] =
     useState<typeof DurationType>('day');
@@ -396,6 +440,7 @@ export default function IndexPage() {
               bordered={false}
               placeholder="请输入邮箱"
               onChange={(e) => setLoginEmail(e.target.value)}
+              value={loginEmail}
             />
           </div>
           <div
@@ -407,6 +452,7 @@ export default function IndexPage() {
               bordered={false}
               placeholder="请输入验证码"
               onChange={(e) => setLoginVerifyCode(e.target.value)}
+              value={loginVerifyCode}
             />
           </div>
           <div
@@ -427,7 +473,7 @@ export default function IndexPage() {
               />
               <span>验证码</span>
             </div>
-            <div className={styles.hugeBtn}>
+            <div className={styles.hugeBtn} onClick={() => login()}>
               <svg
                 ref={(ref) =>
                   generateRoughSvg(ref, 'hugeBtn', {
@@ -482,6 +528,16 @@ export default function IndexPage() {
               </span>
             </div>
           ))}
+        </div>
+        <div
+          className={styles.userIcon}
+          onClick={() => setShowLoginModal(true)}
+        >
+          <svg
+            ref={(ref) => generateRoughSvg(ref, 'rect')}
+            className={styles.border}
+          />
+          <IconFont type="icon--penguin" className={styles.icon} />
         </div>
       </div>
       <div>
@@ -559,6 +615,70 @@ export default function IndexPage() {
           )}
         </div>
       ))}
+      <Modal
+        visible={showLoginModal}
+        title={<span>登录/注册</span>}
+        onCancel={() => setShowLoginModal(false)}
+        footer={null}
+        width={300}
+      >
+        <div>
+          <div
+            className={styles.mobileInputContainer}
+            style={{ marginBottom: '18px' }}
+          >
+            <svg ref={(ref) => generateRoughSvg(ref, 'mobileInput')} />
+            <Input
+              bordered={false}
+              placeholder="请输入邮箱"
+              onChange={(e) => setLoginEmail(e.target.value)}
+              value={loginEmail}
+            />
+          </div>
+          <div
+            className={styles.mobileInputContainer}
+            style={{ marginBottom: '18px' }}
+          >
+            <svg ref={(ref) => generateRoughSvg(ref, 'mobileInput')} />
+            <Input
+              bordered={false}
+              placeholder="请输入验证码"
+              onChange={(e) => setLoginVerifyCode(e.target.value)}
+              value={loginVerifyCode}
+            />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+            }}
+          >
+            <div className={styles.hugeBtn} onClick={() => getVerifyCode()}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>验证码</span>
+            </div>
+            <div className={styles.hugeBtn} onClick={() => login()}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>登录</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
