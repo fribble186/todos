@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './index.less';
-import { Input, Form } from 'antd';
+import { Input, Modal } from 'antd';
 import { createFromIconfontCN } from '@ant-design/icons';
 import rough from 'roughjs';
 import moment from 'moment';
 import { useHistory } from 'umi';
 import type { Options } from 'roughjs/bin/core';
+import request from 'umi-request';
 
 const WEBWIDTH = 800;
 
@@ -18,6 +19,7 @@ export interface ITodoItem {
   content: string;
   endTime: string;
   doneTime?: string;
+  status?: 'ADD' | 'DELETE';
 }
 
 export interface ITodo {
@@ -47,17 +49,23 @@ export default function IndexPage() {
   const [isWeb, setIsWeb] = useState(
     document.documentElement.clientWidth > WEBWIDTH,
   );
-
   const onResize = useCallback(() => {
     setIsWeb(document.documentElement.clientWidth > WEBWIDTH);
   }, []);
-
   useEffect(() => {
     window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
     };
   });
+
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [loginEmail, setLoginEmail] = useState<string>('');
+  const [loginVerifyCode, setLoginVerifyCode] = useState<string>('');
+
+  const getVerifyCode = () => {
+    request.post('/api/verify/sendVerify', { data: { email: loginEmail } });
+  };
 
   /**
    * 通过 proxy 监听 localstorage 的 set 事件
@@ -285,10 +293,16 @@ export default function IndexPage() {
             </div>
           ))}
         </div>
-        {/* <div className={styles.userIcon}>
-          <svg ref={drawTitleBack} id="back" />
-          <div>无聊的日记本</div>
-        </div> */}
+        <div
+          className={styles.userIcon}
+          onClick={() => setShowLoginModal(true)}
+        >
+          <svg
+            ref={(ref) => generateRoughSvg(ref, 'rect')}
+            className={styles.border}
+          />
+          <IconFont type="icon--penguin" className={styles.icon} />
+        </div>
       </div>
 
       <div>
@@ -364,6 +378,69 @@ export default function IndexPage() {
           )}
         </div>
       ))}
+
+      <Modal
+        visible={showLoginModal}
+        title={<span>登录/注册</span>}
+        onCancel={() => setShowLoginModal(false)}
+        footer={null}
+        width={600}
+      >
+        <div>
+          <div
+            className={styles.inputContainer}
+            style={{ marginBottom: '18px' }}
+          >
+            <svg ref={(ref) => generateRoughSvg(ref, 'input')} />
+            <Input
+              bordered={false}
+              placeholder="请输入邮箱"
+              onChange={(e) => setLoginEmail(e.target.value)}
+            />
+          </div>
+          <div
+            className={styles.inputContainer}
+            style={{ marginBottom: '18px' }}
+          >
+            <svg ref={(ref) => generateRoughSvg(ref, 'input')} />
+            <Input
+              bordered={false}
+              placeholder="请输入验证码"
+              onChange={(e) => setLoginVerifyCode(e.target.value)}
+            />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+            }}
+          >
+            <div className={styles.hugeBtn} onClick={() => getVerifyCode()}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>验证码</span>
+            </div>
+            <div className={styles.hugeBtn}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>登录</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   ) : (
     <div className={styles.mobilePage}>

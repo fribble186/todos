@@ -1,6 +1,8 @@
 import { defineConfig } from 'umi';
 
 export default defineConfig({
+  title: 'TODOS',
+  favicon: 'https://todo-web.oss-cn-shanghai.aliyuncs.com/favicon-min.png',
   nodeModulesTransform: {
     type: 'none',
   },
@@ -22,5 +24,11 @@ export default defineConfig({
       .test(/\.(woff|woff2|ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/)
       .use('file-loader?name=./fonts/[name].[ext]')
       .loader('file-loader?name=./fonts/[name].[ext]');
+  },
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+    },
   },
 });
