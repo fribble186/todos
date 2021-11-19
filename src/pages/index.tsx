@@ -160,8 +160,8 @@ export default function IndexPage() {
   const [currentDuration, setCurrentDuration] =
     useState<typeof DurationType>('day');
   const [deadline, setDeadline] = useState<string>('');
-  //@ts-ignore
   const filterTodoDataByDuration = (TODO?.data
+    //@ts-ignore
     ?.sort((a, b) => !b.doneTime - !a.doneTime)
     ?.filter((todo) => {
       if (todo.isDelete) {
@@ -234,10 +234,9 @@ export default function IndexPage() {
   /**
    * 勾回 TODO
    */
-  const handleUnDoneTodo = (doneTodo: ITodoItem) => {
+  const handleUnDoneTodo = (todoIndex: number) => {
     const todoData = TODO?.data || [];
-    const changeTodoItem =
-      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
+    const changeTodoItem = todoData[todoIndex];
     changeTodoItem.doneTime = undefined;
     changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
@@ -246,10 +245,9 @@ export default function IndexPage() {
   /**
    * 勾掉 TODO
    */
-  const handleDoneTodo = (doneTodo: ITodoItem) => {
+  const handleDoneTodo = (todoIndex: number) => {
     const todoData = TODO?.data || [];
-    const changeTodoItem =
-      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
+    const changeTodoItem = todoData[todoIndex];
     changeTodoItem.doneTime = moment().format('YYYY-MM-DD hh:mm:ss');
     changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
@@ -258,10 +256,9 @@ export default function IndexPage() {
   /**
    * 删除 TODO
    */
-  const handleDeleteTodo = (deleteTodo: ITodoItem) => {
+  const handleDeleteTodo = (todoIndex: number) => {
     const todoData = TODO?.data || [];
-    const deleteTodoItem =
-      todoData[todoData.findIndex((todo) => todo.id === deleteTodo.id)];
+    const deleteTodoItem = todoData[todoIndex];
     deleteTodoItem.status = 'DELETE';
     deleteTodoItem.isDelete = true;
     TODO.data = todoData;
@@ -489,12 +486,12 @@ export default function IndexPage() {
             <IconFont
               type="icon-xuanzhong"
               className={styles.selected}
-              onClick={() => handleUnDoneTodo(todo)}
+              onClick={() => handleUnDoneTodo(todoIndex)}
             />
           ) : (
             <svg
               ref={(ref) => generateRoughSvg(ref, 'radio')}
-              onClick={() => handleDoneTodo(todo)}
+              onClick={() => handleDoneTodo(todoIndex)}
               className={styles.unselected}
             />
           )}
@@ -516,7 +513,7 @@ export default function IndexPage() {
               </div> */}
               <div
                 className={styles.smallBtn}
-                onClick={() => handleDeleteTodo(todo)}
+                onClick={() => handleDeleteTodo(todoIndex)}
               >
                 <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
                 <span>删除</span>
@@ -728,12 +725,12 @@ export default function IndexPage() {
             <IconFont
               type="icon-xuanzhong"
               className={styles.selected}
-              onClick={() => handleUnDoneTodo(todo)}
+              onClick={() => handleUnDoneTodo(todoIndex)}
             />
           ) : (
             <svg
               ref={(ref) => generateRoughSvg(ref, 'radio')}
-              onClick={() => handleDoneTodo(todo)}
+              onClick={() => handleDoneTodo(todoIndex)}
               className={styles.unselected}
             />
           )}
@@ -755,7 +752,7 @@ export default function IndexPage() {
               </div> */}
               <div
                 className={styles.mobileSmallBtn}
-                onClick={() => handleDeleteTodo(todo)}
+                onClick={() => handleDeleteTodo(todoIndex)}
               >
                 <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
                 <span>删除</span>
