@@ -234,9 +234,10 @@ export default function IndexPage() {
   /**
    * 勾回 TODO
    */
-  const handleUnDoneTodo = (todoIndex: number) => {
+  const handleUnDoneTodo = (doneTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    const changeTodoItem = todoData[todoIndex];
+    const changeTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
     changeTodoItem.doneTime = undefined;
     changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
@@ -245,9 +246,10 @@ export default function IndexPage() {
   /**
    * 勾掉 TODO
    */
-  const handleDoneTodo = (todoIndex: number) => {
+  const handleDoneTodo = (doneTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    const changeTodoItem = todoData[todoIndex];
+    const changeTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
     changeTodoItem.doneTime = moment().format('YYYY-MM-DD hh:mm:ss');
     changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
@@ -256,9 +258,10 @@ export default function IndexPage() {
   /**
    * 删除 TODO
    */
-  const handleDeleteTodo = (todoIndex: number) => {
+  const handleDeleteTodo = (doneTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    const deleteTodoItem = todoData[todoIndex];
+    const deleteTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
     deleteTodoItem.status = 'DELETE';
     deleteTodoItem.isDelete = true;
     TODO.data = todoData;
@@ -486,12 +489,12 @@ export default function IndexPage() {
             <IconFont
               type="icon-xuanzhong"
               className={styles.selected}
-              onClick={() => handleUnDoneTodo(todoIndex)}
+              onClick={() => handleUnDoneTodo(todo)}
             />
           ) : (
             <svg
               ref={(ref) => generateRoughSvg(ref, 'radio')}
-              onClick={() => handleDoneTodo(todoIndex)}
+              onClick={() => handleDoneTodo(todo)}
               className={styles.unselected}
             />
           )}
@@ -513,7 +516,7 @@ export default function IndexPage() {
               </div> */}
               <div
                 className={styles.smallBtn}
-                onClick={() => handleDeleteTodo(todoIndex)}
+                onClick={() => handleDeleteTodo(todo)}
               >
                 <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
                 <span>删除</span>
@@ -725,12 +728,12 @@ export default function IndexPage() {
             <IconFont
               type="icon-xuanzhong"
               className={styles.selected}
-              onClick={() => handleUnDoneTodo(todoIndex)}
+              onClick={() => handleUnDoneTodo(todo)}
             />
           ) : (
             <svg
               ref={(ref) => generateRoughSvg(ref, 'radio')}
-              onClick={() => handleDoneTodo(todoIndex)}
+              onClick={() => handleDoneTodo(todo)}
               className={styles.unselected}
             />
           )}
@@ -752,7 +755,7 @@ export default function IndexPage() {
               </div> */}
               <div
                 className={styles.mobileSmallBtn}
-                onClick={() => handleDeleteTodo(todoIndex)}
+                onClick={() => handleDeleteTodo(todo)}
               >
                 <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
                 <span>删除</span>
