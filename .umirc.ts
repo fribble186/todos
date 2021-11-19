@@ -25,10 +25,10 @@ export default defineConfig({
       .use('file-loader?name=./fonts/[name].[ext]')
       .loader('file-loader?name=./fonts/[name].[ext]');
   },
-  proxy: {
-    '/api': {
-      target: 'http://localhost:3000',
-      changeOrigin: true,
-    },
-  },
+  // proxy: {
+  //   '/api': {
+  //     target: 'http://localhost:3000',
+  //     changeOrigin: true,
+  //   },
+  // },
 });

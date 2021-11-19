@@ -19,7 +19,8 @@ export interface ITodoItem {
   content: string;
   endTime: string;
   doneTime?: string;
-  status?: 'ADD' | 'DELETE';
+  status?: 'ADD' | 'DELETE' | 'CHANGE';
+  isDelete?: boolean;
 }
 
 export interface ITodo {
@@ -28,48 +29,71 @@ export interface ITodo {
 
 declare const DurationType: 'day' | 'week' | 'month' | 'year';
 
-// const todos: ITodoItem[] = [
-//   {
-//     content: 'test1',
-//     endTime: '2021-11-15',
-//   },
-//   {
-//     content: 'test2',
-//     endTime: '2021-11-15',
-//   },
-//   {
-//     content: 'test3',
-//     endTime: '2021-11-15',
-//   },
-// ];
-
 export default function IndexPage() {
   const history = useHistory();
 
+  /**
+   * 登录用到的变量
+   */
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginVerifyCode, setLoginVerifyCode] = useState<string>('');
+  const [hasSendVerify, setHasSendVerify] = useState<boolean>(false);
 
-  const getVerifyCode = () => {
-    request.post('/api/verify/sendVerify', { data: { email: loginEmail } });
-  };
-
-  const { run } = useRequest(
-    (params) => request.post('/api/todo/sync', params),
+  /**
+   * 同步的请求
+   */
+  const {
+    data: syncTodoData,
+    run,
+    loading,
+    error,
+  } = useRequest(
+    (params) => request.post('https://api.fribble186.cn/api/todo/sync', params),
     {
       debounceInterval: 2000,
       manual: true,
     },
   );
-  const login = async () => {
-    const response = await request.post('/api/user/login', {
-      data: { email: loginEmail, code: loginVerifyCode },
+  useEffect(() => {
+    // 监听同步请求的 response data 并赋值到页面的 TODO，触发 proxy
+    if (syncTodoData) {
+      TODO.data = JSON.parse(syncTodoData).data;
+    }
+  }, [syncTodoData]);
+
+  /**
+   * 获取验证码
+   */
+  const getVerifyCode = async () => {
+    if (hasSendVerify) {
+      message.error('是不是点的过于频繁了🤔');
+      return;
+    }
+    await request.post('https://api.fribble186.cn/api/verify/sendVerify', {
+      data: { email: loginEmail },
     });
+    message.success('发送啦，注意查收邮箱😀');
+    setHasSendVerify(true);
+    setTimeout(() => setHasSendVerify(false), 60 * 1000);
+  };
+
+  /**
+   * 登录的逻辑
+   */
+  const login = async () => {
+    const response = await request.post(
+      'https://api.fribble186.cn/api/user/login',
+      {
+        data: { email: loginEmail, code: loginVerifyCode },
+      },
+    );
     if (response.success) {
       setShowLoginModal(false);
       window.localStorage.setItem('TODO-EMAIL', loginEmail);
       setLoginEmail('');
       setLoginVerifyCode('');
+      run({ data: { data: { data: [] }, email: loginEmail } });
     } else {
       message.error(response.message || '出错了');
     }
@@ -87,6 +111,10 @@ export default function IndexPage() {
   try {
     if (TODOStr !== null) {
       OriginTODO = JSON.parse(TODOStr);
+      if (!(OriginTODO.data instanceof Array)) {
+        OriginTODO = {};
+        STORAGE.setItem('TODO', '{}');
+      }
     }
   } catch (e) {
     STORAGE.setItem('TODO', '{}');
@@ -97,10 +125,8 @@ export default function IndexPage() {
         obj[prop] = value;
         STORAGE.setItem('TODO', JSON.stringify(obj));
         const email = window.localStorage.getItem('TODO-EMAIL');
-        if (email) {
-          run({ data: { data: obj, email } }).then((response) =>
-            console.log(response),
-          );
+        if (email && JSON.stringify({ data: value }) !== syncTodoData) {
+          run({ data: { data: { data: value }, email } });
         }
         refresh();
       }
@@ -108,6 +134,9 @@ export default function IndexPage() {
     },
   });
 
+  /**
+   * 监听是手机还是 web
+   */
   const [isWeb, setIsWeb] = useState(
     document.documentElement.clientWidth > WEBWIDTH,
   );
@@ -118,69 +147,67 @@ export default function IndexPage() {
     window.addEventListener('resize', onResize);
     const email = window.localStorage.getItem('TODO-EMAIL');
     if (email) {
-      request
-        .post('/api/todo/getTodo', { data: { email } })
-        .then((response) => {
-          if (response.data) {
-            try {
-              const todoData = JSON.parse(response.data).data;
-              TODO.data = todoData;
-            } catch (e) {
-              console.log(e);
-            }
-          }
-        });
+      run({ data: { data: { data: [] }, email } });
     }
     return () => {
       window.removeEventListener('resize', onResize);
     };
   }, []);
 
+  /**
+   * 监听 天 周 月 年 并过滤出相应的 todo list 和 deadline
+   */
   const [currentDuration, setCurrentDuration] =
     useState<typeof DurationType>('day');
   const [deadline, setDeadline] = useState<string>('');
-  const filterTodoDataByDuration = (TODO?.data?.filter((todo) => {
-    switch (currentDuration) {
-      case 'day':
-        // 今天到明天
-        return (
-          moment(todo.endTime).isBefore(
-            moment().format('YYYY-MM-DD 24:00:00'),
-          ) &&
-          moment(todo.endTime).isAfter(moment().format('YYYY-MM-DD 00:00:00'))
-        );
-      case 'week':
-        // 今天到这周日
-        return (
-          moment(todo.endTime).isAfter(
-            moment().format('YYYY-MM-DD 00:00:00'),
-          ) &&
-          moment(todo.endTime).isBefore(
-            moment().weekday(7).format('YYYY-MM-DD 24:00:00'),
-          )
-        );
-      case 'month':
-        // 今天到月底
-        return (
-          moment(todo.endTime).isAfter(
-            moment().format('YYYY-MM-DD 00:00:00'),
-          ) &&
-          moment(todo.endTime).isBefore(
-            moment().endOf('month').format('YYYY-MM-DD 24:00:00'),
-          )
-        );
-      case 'year':
-        // 今天到年底
-        return (
-          moment(todo.endTime).isAfter(
-            moment().format('YYYY-MM-DD 00:00:00'),
-          ) &&
-          moment(todo.endTime).isBefore(
-            moment().endOf('year').format('YYYY-MM-DD 24:00:00'),
-          )
-        );
-    }
-  }) || []) as ITodoItem[];
+  //@ts-ignore
+  const filterTodoDataByDuration = (TODO?.data
+    ?.sort((a, b) => !b.doneTime - !a.doneTime)
+    ?.filter((todo) => {
+      if (todo.isDelete) {
+        return false;
+      }
+      switch (currentDuration) {
+        case 'day':
+          // 今天到明天
+          return (
+            moment(todo.endTime).isBefore(
+              moment().format('YYYY-MM-DD 24:00:00'),
+            ) &&
+            moment(todo.endTime).isAfter(moment().format('YYYY-MM-DD 00:00:00'))
+          );
+        case 'week':
+          // 今天到这周日
+          return (
+            moment(todo.endTime).isAfter(
+              moment().format('YYYY-MM-DD 00:00:00'),
+            ) &&
+            moment(todo.endTime).isBefore(
+              moment().weekday(7).format('YYYY-MM-DD 24:00:00'),
+            )
+          );
+        case 'month':
+          // 今天到月底
+          return (
+            moment(todo.endTime).isAfter(
+              moment().format('YYYY-MM-DD 00:00:00'),
+            ) &&
+            moment(todo.endTime).isBefore(
+              moment().endOf('month').format('YYYY-MM-DD 24:00:00'),
+            )
+          );
+        case 'year':
+          // 今天到年底
+          return (
+            moment(todo.endTime).isAfter(
+              moment().format('YYYY-MM-DD 00:00:00'),
+            ) &&
+            moment(todo.endTime).isBefore(
+              moment().endOf('year').format('YYYY-MM-DD 24:00:00'),
+            )
+          );
+      }
+    }) || []) as ITodoItem[];
   useEffect(() => {
     switch (currentDuration) {
       case 'day':
@@ -198,31 +225,51 @@ export default function IndexPage() {
     }
   }, [currentDuration]);
 
+  /**
+   * 输入框中的值
+   */
   const [inputVal, setInputVal] = useState<string>('');
 
+  // 对 TODO 的各种操作
+  /**
+   * 勾回 TODO
+   */
   const handleUnDoneTodo = (doneTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)].doneTime =
-      undefined;
+    const changeTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
+    changeTodoItem.doneTime = undefined;
+    changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
   };
 
+  /**
+   * 勾掉 TODO
+   */
   const handleDoneTodo = (doneTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)].doneTime =
-      moment().format('YYYY-MM-DD hh:mm:ss');
+    const changeTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
+    changeTodoItem.doneTime = moment().format('YYYY-MM-DD hh:mm:ss');
+    changeTodoItem.status = 'CHANGE';
     TODO.data = todoData;
   };
 
+  /**
+   * 删除 TODO
+   */
   const handleDeleteTodo = (deleteTodo: ITodoItem) => {
     const todoData = TODO?.data || [];
-    todoData.splice(
-      todoData.findIndex((todo) => todo.id === deleteTodo.id),
-      1,
-    );
+    const deleteTodoItem =
+      todoData[todoData.findIndex((todo) => todo.id === deleteTodo.id)];
+    deleteTodoItem.status = 'DELETE';
+    deleteTodoItem.isDelete = true;
     TODO.data = todoData;
   };
 
+  /**
+   * 增加 TODO
+   */
   const handleAddTodo = () => {
     const todoData = TODO?.data || [];
     todoData.push({
@@ -231,6 +278,7 @@ export default function IndexPage() {
         : '0',
       content: inputVal,
       endTime: deadline,
+      status: 'ADD',
     });
     TODO.data = todoData;
     setInputVal('');
@@ -253,7 +301,9 @@ export default function IndexPage() {
       | 'input'
       | 'inputLine'
       | 'mobileInput'
-      | 'mobileInputline',
+      | 'mobileInputline'
+      | 'syncLight'
+      | 'LoginRect',
     options?: Options,
   ) => {
     if (ref) {
@@ -261,6 +311,12 @@ export default function IndexPage() {
       const rs = rough.svg(ref);
       let node: SVGGElement | undefined;
       switch (type) {
+        case 'LoginRect':
+          node = rs.rectangle(2, 2, 70, 35, options);
+          break;
+        case 'syncLight':
+          node = rs.circle(6, 6, 12, options);
+          break;
         case 'rect':
           node = rs.rectangle(2, 2, 35, 35, options);
           break;
@@ -298,6 +354,7 @@ export default function IndexPage() {
   };
 
   return isWeb ? (
+    // 网页端
     <div className={styles.page}>
       <div className={styles.pcHeadContainer}>
         <div className={styles.durationSelector}>
@@ -342,16 +399,62 @@ export default function IndexPage() {
           onClick={() => setShowLoginModal(true)}
         >
           <svg
-            ref={(ref) => generateRoughSvg(ref, 'rect')}
+            ref={(ref) => generateRoughSvg(ref, 'LoginRect')}
             className={styles.border}
           />
           <IconFont type="icon--penguin" className={styles.icon} />
+          <span>LOGIN</span>
         </div>
       </div>
 
       <div>
         <span>DEADLINE: {deadline}</span>
       </div>
+
+      {window.localStorage.getItem('TODO-EMAIL') ? (
+        <div className={styles.syncLight}>
+          {loading ? (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'gray',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>sync...</span>
+            </>
+          ) : error ? (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'red',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>Synchronization FAIL</span>
+            </>
+          ) : (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'green',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>Complete Synchronization</span>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div className={styles.todoAddContainer}>
         <div className={styles.diary} onClick={() => history.push('/diary')}>
@@ -407,10 +510,10 @@ export default function IndexPage() {
           </div>
           {todo.doneTime ? null : (
             <>
-              <div className={styles.smallBtn}>
+              {/* <div className={styles.smallBtn} onClick={() => handleFreshTodo(todo)}>
                 <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
-                <span>编辑</span>
-              </div>
+                <span>今天</span>
+              </div> */}
               <div
                 className={styles.smallBtn}
                 onClick={() => handleDeleteTodo(todo)}
@@ -489,6 +592,7 @@ export default function IndexPage() {
       </Modal>
     </div>
   ) : (
+    // 手机端
     <div className={styles.mobilePage}>
       mobile
       <div className={styles.pcHeadContainer}>
@@ -534,15 +638,60 @@ export default function IndexPage() {
           onClick={() => setShowLoginModal(true)}
         >
           <svg
-            ref={(ref) => generateRoughSvg(ref, 'rect')}
+            ref={(ref) => generateRoughSvg(ref, 'LoginRect')}
             className={styles.border}
           />
           <IconFont type="icon--penguin" className={styles.icon} />
+          <span>LOGIN</span>
         </div>
       </div>
       <div>
         <span>DEADLINE: {deadline}</span>
       </div>
+      {window.localStorage.getItem('TODO-EMAIL') ? (
+        <div className={styles.syncLight}>
+          {loading ? (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'gray',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>sync...</span>
+            </>
+          ) : error ? (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'red',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>Synchronization FAIL</span>
+            </>
+          ) : (
+            <>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'syncLight', {
+                    strokeWidth: 0,
+                    fill: 'green',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>Complete Synchronization</span>
+            </>
+          )}
+        </div>
+      ) : null}
       <div className={styles.mobileTodoAddContainer}>
         <div className={styles.diary} onClick={() => history.push('/diary')}>
           <IconFont type="icon-shubenbijiben" />
@@ -600,10 +749,10 @@ export default function IndexPage() {
           </div>
           {todo.doneTime ? null : (
             <>
-              <div className={styles.mobileSmallBtn}>
+              {/* <div className={styles.mobileSmallBtn} onClick={() => handleFreshTodo(todo)}>
                 <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
-                <span>编辑</span>
-              </div>
+                <span>今天</span>
+              </div> */}
               <div
                 className={styles.mobileSmallBtn}
                 onClick={() => handleDeleteTodo(todo)}

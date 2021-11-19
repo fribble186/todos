@@ -86,11 +86,18 @@ const Diary = () => {
               <br />
               <p>{getDoneTxt()}</p>
               <br />
-              <p>
-                但是我还没完成{unDoneTodo.map((todo) => `“${todo.content}”，`)}
-                要不还是明天完成吧！
-              </p>
-              <p>今天早点睡觉吧，别玩手机了！</p>
+              {unDoneTodo.length ? (
+                <p>
+                  但是我还没完成
+                  {unDoneTodo.map((todo) => `“${todo.content}”，`)}
+                  要不还是明天完成吧！
+                </p>
+              ) : null}
+              {unDoneTodo.length ? (
+                <p>今天早点睡觉吧，别玩手机了！</p>
+              ) : (
+                <p>今天任务都做完了，睡觉去咯！</p>
+              )}
               <div className={styles.timestamp}>
                 {moment().format('YYYY-MM-DD')}
               </div>
