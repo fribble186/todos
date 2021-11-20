@@ -770,10 +770,10 @@ export default function IndexPage() {
             <>
               {currentDuration === 'day' ? null : (
                 <div
-                  className={styles.smallBtn}
+                  className={styles.mobileSmallBtn}
                   onClick={() => handleFreshTodo(todo)}
                 >
-                  <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
+                  <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
                   <span>今天</span>
                 </div>
               )}
