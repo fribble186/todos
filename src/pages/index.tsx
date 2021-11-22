@@ -576,7 +576,7 @@ export default function IndexPage() {
             )}
             <Input
               bordered={false}
-              value={todo.content + (todo.loop ? '(everyday)' : '')}
+              value={todo.content + (todo.loop ? '(everyday)' : todo.doneTime)}
               style={todo.doneTime ? { textDecoration: 'line-through' } : {}}
             />
           </div>
@@ -869,7 +869,7 @@ export default function IndexPage() {
             )}
             <Input
               bordered={false}
-              value={todo.content + (todo.loop ? '(everyday)' : '')}
+              value={todo.content + (todo.loop ? '(everyday)' : todo.doneTime)}
               style={todo.doneTime ? { textDecoration: 'line-through' } : {}}
             />
           </div>
