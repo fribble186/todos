@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './index.less';
-import { Input, Modal, message } from 'antd';
+import { Input, Modal, message, Radio, Space } from 'antd';
 import { createFromIconfontCN } from '@ant-design/icons';
 import rough from 'roughjs';
 import moment from 'moment';
@@ -28,6 +28,14 @@ export interface ITodo {
 }
 
 declare const DurationType: 'day' | 'week' | 'month' | 'year' | 'all';
+
+const DurationTypeArray = [
+  { key: 'day', value: '天' },
+  { key: 'week', value: '周' },
+  { key: 'month', value: '月' },
+  { key: 'year', value: '年' },
+  { key: 'all', value: '全' },
+];
 
 export default function IndexPage() {
   const history = useHistory();
@@ -293,13 +301,41 @@ export default function IndexPage() {
   /**
    * 把任务放到今天做
    */
-  const handleFreshTodo = (doneTodo: ITodoItem) => {
-    const todoData = TODO?.data || [];
-    const deleteTodoItem =
-      todoData[todoData.findIndex((todo) => todo.id === doneTodo.id)];
-    deleteTodoItem.endTime = moment().format('YYYY-MM-DD 23:59:59');
-    deleteTodoItem.status = 'CHANGE';
-    TODO.data = todoData;
+  const [selectingDurationKey, setSelectingDurationKey] =
+    useState<typeof DurationType>('day');
+  const [selectedTodo, setSelectedTodo] = useState<ITodoItem | undefined>();
+  const handleChangeTodo = () => {
+    if (selectedTodo) {
+      const todoData = TODO?.data || [];
+      const deleteTodoItem =
+        todoData[todoData.findIndex((todo) => todo.id === selectedTodo.id)];
+      switch (selectingDurationKey) {
+        case 'day':
+          deleteTodoItem.endTime = moment().format('YYYY-MM-DD 23:59:59');
+          break;
+        case 'week':
+          deleteTodoItem.endTime = moment()
+            .weekday(7)
+            .format('YYYY-MM-DD 23:59:59');
+          break;
+        case 'month':
+          deleteTodoItem.endTime = moment()
+            .endOf('month')
+            .format('YYYY-MM-DD 23:59:59');
+          break;
+        case 'year':
+          deleteTodoItem.endTime = moment()
+            .endOf('year')
+            .format('YYYY-MM-DD 23:59:59');
+          break;
+        case 'all':
+          deleteTodoItem.endTime = 'Infinite';
+          break;
+      }
+      deleteTodoItem.status = 'CHANGE';
+      TODO.data = todoData;
+      setSelectedTodo(undefined);
+    }
   };
 
   /**
@@ -377,13 +413,7 @@ export default function IndexPage() {
       <div className={styles.pcHeadContainer}>
         <div className={styles.durationSelector}>
           {(
-            [
-              { key: 'day', value: '天' },
-              { key: 'week', value: '周' },
-              { key: 'month', value: '月' },
-              { key: 'year', value: '年' },
-              { key: 'all', value: '全' },
-            ] as { key: typeof DurationType; value: string }[]
+            DurationTypeArray as { key: typeof DurationType; value: string }[]
           ).map(({ key, value }) => (
             <div
               key={`duration_${key}`}
@@ -529,15 +559,13 @@ export default function IndexPage() {
           </div>
           {todo.doneTime ? null : (
             <>
-              {currentDuration === 'day' ? null : (
-                <div
-                  className={styles.smallBtn}
-                  onClick={() => handleFreshTodo(todo)}
-                >
-                  <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
-                  <span>今天</span>
-                </div>
-              )}
+              <div
+                className={styles.smallBtn}
+                onClick={() => setSelectedTodo(todo)}
+              >
+                <svg ref={(ref) => generateRoughSvg(ref, 'smallBtn')} />
+                <span>修改</span>
+              </div>
               <div
                 className={styles.smallBtn}
                 onClick={() => handleDeleteTodo(todo)}
@@ -614,6 +642,61 @@ export default function IndexPage() {
           </div>
         </div>
       </Modal>
+      <Modal
+        visible={!!selectedTodo}
+        title={<span>切换 Deadline</span>}
+        onCancel={() => setSelectedTodo(undefined)}
+        footer={null}
+        width={600}
+        className={styles.font}
+      >
+        <div>
+          <Radio.Group
+            onChange={(e: any) => setSelectingDurationKey(e.target.value)}
+            value={selectingDurationKey}
+          >
+            {DurationTypeArray.map((duration) => (
+              <Radio value={duration.key} key={duration.key}>
+                {duration.value}
+              </Radio>
+            ))}
+          </Radio.Group>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              marginTop: '12px',
+            }}
+          >
+            <div
+              className={styles.hugeBtn}
+              onClick={() => setSelectedTodo(undefined)}
+            >
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>取消</span>
+            </div>
+            <div className={styles.hugeBtn} onClick={() => handleChangeTodo()}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>切换</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   ) : (
     // 手机端
@@ -622,13 +705,7 @@ export default function IndexPage() {
       <div className={styles.pcHeadContainer}>
         <div className={styles.durationSelector}>
           {(
-            [
-              { key: 'day', value: '天' },
-              { key: 'week', value: '周' },
-              { key: 'month', value: '月' },
-              { key: 'year', value: '年' },
-              { key: 'all', value: '全' },
-            ] as { key: typeof DurationType; value: string }[]
+            DurationTypeArray as { key: typeof DurationType; value: string }[]
           ).map(({ key, value }) => (
             <div
               key={`duration_${key}`}
@@ -774,15 +851,13 @@ export default function IndexPage() {
           </div>
           {todo.doneTime ? null : (
             <>
-              {currentDuration === 'day' ? null : (
-                <div
-                  className={styles.mobileSmallBtn}
-                  onClick={() => handleFreshTodo(todo)}
-                >
-                  <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
-                  <span>今天</span>
-                </div>
-              )}
+              <div
+                className={styles.mobileSmallBtn}
+                onClick={() => setSelectedTodo(todo)}
+              >
+                <svg ref={(ref) => generateRoughSvg(ref, 'mobileSmallBtn')} />
+                <span>修改</span>
+              </div>
               <div
                 className={styles.mobileSmallBtn}
                 onClick={() => handleDeleteTodo(todo)}
@@ -854,6 +929,61 @@ export default function IndexPage() {
                 }
               />
               <span>登录</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        visible={!!selectedTodo}
+        title={<span>切换 Deadline</span>}
+        onCancel={() => setSelectedTodo(undefined)}
+        footer={null}
+        width={300}
+        className={styles.font}
+      >
+        <div>
+          <Radio.Group
+            onChange={(e: any) => setSelectingDurationKey(e.target.value)}
+            value={selectingDurationKey}
+          >
+            {DurationTypeArray.map((duration) => (
+              <Radio value={duration.key} key={duration.key}>
+                {duration.value}
+              </Radio>
+            ))}
+          </Radio.Group>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              marginTop: '12px',
+            }}
+          >
+            <div
+              className={styles.hugeBtn}
+              onClick={() => setSelectedTodo(undefined)}
+            >
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>取消</span>
+            </div>
+            <div className={styles.hugeBtn} onClick={() => handleChangeTodo()}>
+              <svg
+                ref={(ref) =>
+                  generateRoughSvg(ref, 'hugeBtn', {
+                    fill: 'black',
+                    fillStyle: 'solid',
+                  })
+                }
+              />
+              <span>切换</span>
             </div>
           </div>
         </div>
