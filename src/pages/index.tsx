@@ -27,7 +27,7 @@ export interface ITodo {
   data?: ITodoItem[];
 }
 
-declare const DurationType: 'day' | 'week' | 'month' | 'year';
+declare const DurationType: 'day' | 'week' | 'month' | 'year' | 'all';
 
 export default function IndexPage() {
   const history = useHistory();
@@ -206,6 +206,8 @@ export default function IndexPage() {
               moment().endOf('year').format('YYYY-MM-DD 24:00:00'),
             )
           );
+        case 'all':
+          return true;
       }
     }) || []) as ITodoItem[];
   useEffect(() => {
@@ -222,6 +224,8 @@ export default function IndexPage() {
       case 'year':
         setDeadline(moment().endOf('year').format('YYYY-MM-DD 23:59:59'));
         break;
+      case 'all':
+        setDeadline('Infinite');
     }
   }, [currentDuration]);
 
@@ -361,6 +365,7 @@ export default function IndexPage() {
               { key: 'week', value: '周' },
               { key: 'month', value: '月' },
               { key: 'year', value: '年' },
+              { key: 'all', value: '全' },
             ] as { key: typeof DurationType; value: string }[]
           ).map(({ key, value }) => (
             <div
@@ -600,6 +605,7 @@ export default function IndexPage() {
               { key: 'week', value: '周' },
               { key: 'month', value: '月' },
               { key: 'year', value: '年' },
+              { key: 'all', value: '全' },
             ] as { key: typeof DurationType; value: string }[]
           ).map(({ key, value }) => (
             <div
