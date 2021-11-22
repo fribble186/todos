@@ -21,6 +21,7 @@ export interface ITodoItem {
   doneTime?: string;
   status?: 'ADD' | 'DELETE' | 'CHANGE';
   isDelete?: boolean;
+  loop?: boolean;
 }
 
 export interface ITodo {
@@ -28,6 +29,7 @@ export interface ITodo {
 }
 
 declare const DurationType: 'day' | 'week' | 'month' | 'year' | 'all';
+declare const LoopType: 'loop';
 
 const DurationTypeArray = [
   { key: 'day', value: '天' },
@@ -130,6 +132,19 @@ export default function IndexPage() {
   const TODO = new Proxy(OriginTODO, {
     set: function (obj, prop, value) {
       if (prop === 'data') {
+        value = value.map((todo: ITodoItem) =>
+          todo.loop
+            ? {
+                ...todo,
+                doneTime:
+                  !todo.doneTime ||
+                  !(moment(todo.doneTime).get('date') - moment().get('date'))
+                    ? todo.doneTime
+                    : undefined,
+                endTime: moment().format('YYYY-MM-DD 23:59:59'),
+              }
+            : todo,
+        );
         obj[prop] = value;
         STORAGE.setItem('TODO', JSON.stringify(obj));
         const email = window.localStorage.getItem('TODO-EMAIL');
@@ -157,6 +172,7 @@ export default function IndexPage() {
     if (email) {
       run({ data: { data: { data: [] }, email } });
     }
+    TODO.data = TODO.data;
     return () => {
       window.removeEventListener('resize', onResize);
     };
@@ -236,6 +252,7 @@ export default function IndexPage() {
         break;
       case 'all':
         setDeadline('Infinite');
+        break;
     }
   }, [currentDuration]);
 
@@ -301,14 +318,16 @@ export default function IndexPage() {
   /**
    * 把任务放到今天做
    */
-  const [selectingDurationKey, setSelectingDurationKey] =
-    useState<typeof DurationType>('day');
+  const [selectingDurationKey, setSelectingDurationKey] = useState<
+    typeof DurationType | typeof LoopType
+  >('day');
   const [selectedTodo, setSelectedTodo] = useState<ITodoItem | undefined>();
   const handleChangeTodo = () => {
     if (selectedTodo) {
       const todoData = TODO?.data || [];
       const deleteTodoItem =
         todoData[todoData.findIndex((todo) => todo.id === selectedTodo.id)];
+      deleteTodoItem.loop = false;
       switch (selectingDurationKey) {
         case 'day':
           deleteTodoItem.endTime = moment().format('YYYY-MM-DD 23:59:59');
@@ -330,6 +349,10 @@ export default function IndexPage() {
           break;
         case 'all':
           deleteTodoItem.endTime = 'Infinite';
+          break;
+        case 'loop':
+          deleteTodoItem.endTime = moment().format('YYYY-MM-DD 23:59:59');
+          deleteTodoItem.loop = true;
           break;
       }
       deleteTodoItem.status = 'CHANGE';
@@ -553,7 +576,7 @@ export default function IndexPage() {
             )}
             <Input
               bordered={false}
-              value={todo.content}
+              value={todo.content + (todo.loop ? '(everyday)' : '')}
               style={todo.doneTime ? { textDecoration: 'line-through' } : {}}
             />
           </div>
@@ -660,6 +683,7 @@ export default function IndexPage() {
                 {duration.value}
               </Radio>
             ))}
+            <Radio value={'loop'}>每天</Radio>
           </Radio.Group>
           <div
             style={{
@@ -845,7 +869,7 @@ export default function IndexPage() {
             )}
             <Input
               bordered={false}
-              value={todo.content}
+              value={todo.content + (todo.loop ? '(everyday)' : '')}
               style={todo.doneTime ? { textDecoration: 'line-through' } : {}}
             />
           </div>
@@ -951,6 +975,7 @@ export default function IndexPage() {
                 {duration.value}
               </Radio>
             ))}
+            <Radio value={'loop'}>每天</Radio>
           </Radio.Group>
           <div
             style={{
