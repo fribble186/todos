@@ -151,7 +151,6 @@ export default function IndexPage() {
         obj[prop] = value;
         STORAGE.setItem('TODO', JSON.stringify(obj));
         const email = window.localStorage.getItem('TODO-EMAIL');
-        console.log({ data: value }, JSON.parse(syncTodoData || '{}'));
         if (email && JSON.stringify({ data: value }) !== syncTodoData) {
           run({ data: { data: { data: value }, email } });
         }
