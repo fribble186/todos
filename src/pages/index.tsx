@@ -132,22 +132,26 @@ export default function IndexPage() {
   const TODO = new Proxy(OriginTODO, {
     set: function (obj, prop, value) {
       if (prop === 'data') {
-        value = value.map((todo: ITodoItem) =>
-          todo.loop
-            ? {
-                ...todo,
-                doneTime:
-                  !todo.doneTime ||
-                  !(moment(todo.doneTime).get('date') - moment().get('date'))
-                    ? todo.doneTime
-                    : undefined,
-                endTime: moment().format('YYYY-MM-DD 23:59:59'),
-              }
-            : todo,
-        );
+        value = value?.map((todo: ITodoItem) => {
+          if (todo.loop) {
+            if (
+              todo.doneTime &&
+              !(moment(todo.doneTime).get('date') - moment().get('date'))
+            ) {
+              return todo;
+            } else if (!todo.doneTime) {
+              return todo;
+            } else {
+              delete todo.doneTime;
+              todo.status = 'CHANGE';
+            }
+          }
+          return todo;
+        });
         obj[prop] = value;
         STORAGE.setItem('TODO', JSON.stringify(obj));
         const email = window.localStorage.getItem('TODO-EMAIL');
+        console.log({ data: value }, JSON.parse(syncTodoData || '{}'));
         if (email && JSON.stringify({ data: value }) !== syncTodoData) {
           run({ data: { data: { data: value }, email } });
         }
@@ -235,7 +239,6 @@ export default function IndexPage() {
           return true;
       }
     }) || []) as ITodoItem[];
-  console.log(TODO.data, filterTodoDataByDuration);
   useEffect(() => {
     switch (currentDuration) {
       case 'day':
