@@ -134,6 +134,12 @@ export default function IndexPage() {
       if (prop === 'data') {
         value = value?.map((todo: ITodoItem) => {
           if (todo.loop) {
+            if (todo.endTime !== moment().format('YYYY-MM-DD 23:59:59')) {
+              delete todo.doneTime;
+              todo.endTime = moment().format('YYYY-MM-DD 23:59:59');
+              todo.status = 'CHANGE';
+              return todo;
+            }
             if (
               todo.doneTime &&
               !(moment(todo.doneTime).get('date') - moment().get('date'))
@@ -143,6 +149,7 @@ export default function IndexPage() {
               return todo;
             } else {
               delete todo.doneTime;
+              todo.endTime = moment().format('YYYY-MM-DD 23:59:59');
               todo.status = 'CHANGE';
             }
           }
@@ -191,6 +198,8 @@ export default function IndexPage() {
   const filterTodoDataByDuration = (_data
     //@ts-ignore
     ?.sort((a, b) => !b.doneTime - !a.doneTime)
+    //@ts-ignore
+    ?.sort((a, b) => !a.loop - !b.loop)
     ?.filter((todo) => {
       if (todo.isDelete) {
         return false;
@@ -212,7 +221,8 @@ export default function IndexPage() {
             ) &&
             moment(todo.endTime).isBefore(
               moment().weekday(7).format('YYYY-MM-DD 24:00:00'),
-            )
+            ) &&
+            !todo.loop
           );
         case 'month':
           // 月初到月底
@@ -222,7 +232,8 @@ export default function IndexPage() {
             ) &&
             moment(todo.endTime).isBefore(
               moment().endOf('month').format('YYYY-MM-DD 24:00:00'),
-            )
+            ) &&
+            !todo.loop
           );
         case 'year':
           // 今天到年底
@@ -232,7 +243,8 @@ export default function IndexPage() {
             ) &&
             moment(todo.endTime).isBefore(
               moment().endOf('year').format('YYYY-MM-DD 24:00:00'),
-            )
+            ) &&
+            !todo.loop
           );
         case 'all':
           return true;
